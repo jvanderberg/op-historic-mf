@@ -14,6 +14,10 @@ const TYPE_LABEL: Readonly<Record<Building['type'], string>> = {
 const SOURCE_LABEL: Readonly<Record<string, string>> = {
 	char_yrblt: 'assessor',
 	condo_chars: 'assessor (condo)',
+	condo_chars_newbuild: 'assessor (condo)',
+	condo_chars_unverified: 'assessor (condo, unverified)',
+	predecessor_chars: 'assessor (pre-conversion parcel)',
+	conversion_year_unknown: 'unknown (converted 7+ unit building)',
 	commval: 'assessor (commercial)',
 	char_yrblt_anyyear: 'assessor (earlier year)',
 	class_history: 'roll history',
