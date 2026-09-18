@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { ALL_SIZES, type BinWidth, type Metric } from './lib/bins';
 import { type DistrictSlug, isSizeClass, type SizeClass } from './lib/data';
 
-export type SelectableDistrict = Exclude<DistrictSlug, 'rest'>;
+export type SelectableDistrict = Extract<DistrictSlug, 'flw' | 'ridgeland'>;
 
 export interface UrlState {
 	readonly district: SelectableDistrict;
@@ -37,6 +37,13 @@ const DEFAULTS: UrlState = {
 	showTable: false,
 };
 
+function parseMetric(v: string | null): Metric {
+	if (v === 'buildings' || v === 'units_per_sqmi') {
+		return v;
+	}
+	return 'units';
+}
+
 function isBinWidth(n: number): n is BinWidth {
 	return n === 1 || n === 5 || n === 10;
 }
@@ -52,7 +59,7 @@ export function parseUrlState(search: string): UrlState {
 	return {
 		district: p.get('district') === 'ridgeland' ? 'ridgeland' : 'flw',
 		sizes,
-		metric: p.get('metric') === 'buildings' ? 'buildings' : 'units',
+		metric: parseMetric(p.get('metric')),
 		binWidth: isBinWidth(binParam) ? binParam : DEFAULTS.binWidth,
 		sharedScale: p.get('scale') === 'shared',
 		showTable: p.get('table') === '1',

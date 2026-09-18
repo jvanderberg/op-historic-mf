@@ -1,4 +1,12 @@
-import { type Bin, type BinWidth, type Metric, type StackRow, sizeLabel } from '@/lib/bins';
+import {
+	type Bin,
+	type BinWidth,
+	formatValue,
+	METRIC_LABEL,
+	type Metric,
+	type StackRow,
+	sizeLabel,
+} from '@/lib/bins';
 import { SIZE_COLOR } from '@/lib/colors';
 import { SIZE_CLASSES, type SizeClass } from '@/lib/data';
 import { type Geometry, MARGIN } from './geometry';
@@ -37,12 +45,12 @@ export function HoverCard({ g, index, bin, row, binWidth, metric, sizes }: Hover
 						/>
 						{sizeLabel(s)}
 					</span>
-					<span className="tabular-nums text-ink">{row[s].toLocaleString()}</span>
+					<span className="tabular-nums text-ink">{formatValue(row[s])}</span>
 				</div>
 			))}
 			<div className="mt-1 flex justify-between gap-3 border-t border-grid pt-1 font-medium text-ink">
-				<span>total {metric}</span>
-				<span className="tabular-nums">{row.total.toLocaleString()}</span>
+				<span>total {METRIC_LABEL[metric]}</span>
+				<span className="tabular-nums">{formatValue(row.total)}</span>
 			</div>
 		</div>
 	);

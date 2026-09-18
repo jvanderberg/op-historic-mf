@@ -3,8 +3,18 @@ import { type Building, SIZE_CLASSES, type SizeClass } from './data';
 /** Which buildings a panel covers, e.g. "in this district" or "everything else". */
 export type Scope = (b: Building) => boolean;
 
-export type Metric = 'buildings' | 'units';
+export type Metric = 'buildings' | 'units' | 'units_per_sqmi';
 export type BinWidth = 1 | 5 | 10;
+
+export const METRIC_LABEL: Readonly<Record<Metric, string>> = {
+	units: 'units',
+	buildings: 'buildings',
+	units_per_sqmi: 'units / sq mi',
+};
+
+export function formatValue(v: number): string {
+	return v.toLocaleString(undefined, { maximumFractionDigits: v !== 0 && v < 10 ? 1 : 0 });
+}
 
 /** Fixed year domain so every chart shares the same x axis. */
 export const DOMAIN_START = 1860;
@@ -56,15 +66,25 @@ export function matchesFilter(b: Building, sizes: ReadonlySet<SizeClass>): boole
 	return sizes.has(b.size);
 }
 
-function weight(b: Building, metric: Metric): number {
-	return metric === 'units' ? b.units : 1;
+function weight(b: Building, metric: Metric, areaSqMi: number): number {
+	if (metric === 'buildings') {
+		return 1;
+	}
+	if (metric === 'units_per_sqmi') {
+		return areaSqMi > 0 ? b.units / areaSqMi : 0;
+	}
+	return b.units;
 }
 
-/** One stacked row per bin for one district under the given filters. */
+/**
+ * One stacked row per bin for the buildings in scope under the given filters.
+ * areaSqMi is the land area of the scope, used by the per-square-mile metric.
+ */
 export function aggregate(
 	buildings: readonly Building[],
 	scope: Scope,
 	filters: Filters,
+	areaSqMi: number,
 ): readonly StackRow[] {
 	const bins = makeBins(filters.binWidth);
 	const rows = bins.map(() => ({ ...emptyRow() }) as Record<SizeClass, number> & { total: number });
@@ -80,7 +100,7 @@ export function aggregate(
 		if (row === undefined) {
 			continue;
 		}
-		const w = weight(b, filters.metric);
+		const w = weight(b, filters.metric, areaSqMi);
 		row[b.size] += w;
 		row.total += w;
 	}

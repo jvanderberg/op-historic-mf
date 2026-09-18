@@ -29,6 +29,7 @@ type BinKey = '1' | '5' | '10';
 const METRICS: readonly { value: Metric; label: string }[] = [
 	{ value: 'units', label: 'Units' },
 	{ value: 'buildings', label: 'Buildings' },
+	{ value: 'units_per_sqmi', label: 'Units / sq mi' },
 ];
 const BINS: readonly { value: BinKey; label: string }[] = [
 	{ value: '1', label: 'Year' },
@@ -52,7 +53,7 @@ function selectableDistricts(
 ): readonly (District & { readonly slug: SelectableDistrict })[] {
 	const out: (District & { readonly slug: SelectableDistrict })[] = [];
 	for (const d of data.districts) {
-		if (d.slug !== 'rest' && d.localYear !== null && d.nrYear !== null) {
+		if ((d.slug === 'flw' || d.slug === 'ridgeland') && d.localYear !== null && d.nrYear !== null) {
 			out.push({ ...d, slug: d.slug });
 		}
 	}
@@ -93,12 +94,18 @@ export function App({ data }: AppProps) {
 		}
 		const years = { localYear: district.localYear ?? 0, nrYear: district.nrYear ?? 0 };
 		const inside: Scope = (b) => b.district === district.slug;
-		const outside: Scope = (b) => b.district !== district.slug;
+		const outside: Scope = (b) => b.district === 'rest';
+		const rest = data.districts.find((d) => d.slug === 'rest');
 		return [
-			{ key: 'district', title: district.name, scope: inside },
-			{ key: 'rest', title: `Rest of Oak Park (outside ${district.name})`, scope: outside },
+			{ key: 'district', title: district.name, scope: inside, areaSqMi: district.areaSqMi },
+			{
+				key: 'rest',
+				title: 'Rest of Oak Park (outside the historic districts)',
+				scope: outside,
+				areaSqMi: rest?.areaSqMi ?? 0,
+			},
 		].map((p) => {
-			const rows = aggregate(data.buildings, p.scope, filters);
+			const rows = aggregate(data.buildings, p.scope, filters, p.areaSqMi);
 			return {
 				...p,
 				years,
@@ -179,7 +186,7 @@ export function App({ data }: AppProps) {
 							onHover={actions.setHoveredBin}
 							onSelect={actions.setSelectedBin}
 						/>
-						<Kpis scope={p.key} cutYear={p.years.localYear} ba={p.ba} />
+						<Kpis scope={p.key} cutYear={p.years.localYear} ba={p.ba} areaSqMi={p.areaSqMi} />
 					</section>
 				))}
 			</div>

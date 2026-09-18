@@ -1,5 +1,12 @@
 import { useId, useRef } from 'react';
-import type { Bin, BinWidth, Metric, StackRow } from '@/lib/bins';
+import {
+	type Bin,
+	type BinWidth,
+	formatValue,
+	METRIC_LABEL,
+	type Metric,
+	type StackRow,
+} from '@/lib/bins';
 import type { SizeClass } from '@/lib/data';
 import { useWidth } from '@/lib/useWidth';
 import { Axes } from './chart/Axes';
@@ -56,7 +63,7 @@ export function DistrictChart(props: DistrictChartProps) {
 					width={width}
 					height={HEIGHT}
 					role="img"
-					aria-label={`${title}: multi-family ${metric} by year built`}
+					aria-label={`${title}: multi-family ${METRIC_LABEL[metric]} by year built`}
 					className="block select-none"
 				>
 					<Axes g={g} bins={bins} />
@@ -82,7 +89,7 @@ export function DistrictChart(props: DistrictChartProps) {
 						<button
 							key={b.start}
 							type="button"
-							aria-label={`${b.label}: ${rows[i]?.total ?? 0} ${metric}`}
+							aria-label={`${b.label}: ${formatValue(rows[i]?.total ?? 0)} ${METRIC_LABEL[metric]}`}
 							aria-pressed={selectedBin === i}
 							tabIndex={rows[i]?.total ? 0 : -1}
 							onMouseEnter={() => onHover(i)}

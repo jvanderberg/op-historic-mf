@@ -1,6 +1,14 @@
 import { fixture } from '@/test/fixture';
 import { ALL_SIZES, aggregate, beforeAfter, binIndex, makeBins, maxTotal } from './bins';
 
+function idx(year: number, width: 1 | 5 | 10): number {
+	const i = binIndex(year, width);
+	if (i === null) {
+		throw new Error(`year ${year} outside domain`);
+	}
+	return i;
+}
+
 describe('makeBins', () => {
 	it('covers the fixed domain with aligned edges', () => {
 		const b1 = makeBins(1);
@@ -21,47 +29,55 @@ describe('makeBins', () => {
 });
 
 describe('aggregate', () => {
+	const inFlw = (b: { district: string }) => b.district === 'flw';
 	it('stacks units by size class per bin and respects the filter', () => {
-		const rows = aggregate(fixture.buildings, (b) => b.district === 'flw', {
-			sizes: ALL_SIZES,
-			metric: 'units',
-			binWidth: 10,
-		});
-		const i1910 = binIndex(1910, 10);
-		const i1970 = binIndex(1973, 10);
-		expect(i1910).not.toBeNull();
-		expect(i1970).not.toBeNull();
-		if (i1910 === null || i1970 === null) {
-			throw new Error('unreachable');
-		}
-		expect(rows[i1910]?.['2']).toBe(2);
-		expect(rows[i1910]?.['3']).toBe(3);
-		expect(rows[i1910]?.total).toBe(5);
-		expect(rows[i1970]?.['7+']).toBe(81);
+		const rows = aggregate(
+			fixture.buildings,
+			inFlw,
+			{ sizes: ALL_SIZES, metric: 'units', binWidth: 10 },
+			1,
+		);
+		expect(rows[idx(1910, 10)]?.['2']).toBe(2);
+		expect(rows[idx(1910, 10)]?.['3']).toBe(3);
+		expect(rows[idx(1910, 10)]?.total).toBe(5);
+		expect(rows[idx(1973, 10)]?.['7+']).toBe(81);
 		expect(maxTotal(rows)).toBe(81);
-		const only2 = aggregate(fixture.buildings, (b) => b.district === 'flw', {
-			sizes: new Set(['2']),
-			metric: 'buildings',
-			binWidth: 10,
-		});
-		expect(only2[i1910]?.total).toBe(1);
-		expect(only2[i1970]?.total).toBe(0);
+		const only2 = aggregate(
+			fixture.buildings,
+			inFlw,
+			{ sizes: new Set(['2']), metric: 'buildings', binWidth: 10 },
+			1,
+		);
+		expect(only2[idx(1910, 10)]?.total).toBe(1);
+		expect(only2[idx(1973, 10)]?.total).toBe(0);
 	});
-	it('a scope can be everything outside a district', () => {
-		const rows = aggregate(fixture.buildings, (b) => b.district !== 'flw', {
-			sizes: ALL_SIZES,
-			metric: 'buildings',
-			binWidth: 1,
-		});
-		expect(rows.reduce((a, r) => a + r.total, 0)).toBe(3);
+	it('a scope can be everything outside the districts', () => {
+		const rows = aggregate(
+			fixture.buildings,
+			(b) => b.district === 'rest',
+			{ sizes: ALL_SIZES, metric: 'buildings', binWidth: 1 },
+			1,
+		);
+		expect(rows.reduce((a, r) => a + r.total, 0)).toBe(1);
 	});
 	it('ignores undated buildings and other districts', () => {
-		const rows = aggregate(fixture.buildings, (b) => b.district === 'ridgeland', {
-			sizes: ALL_SIZES,
-			metric: 'buildings',
-			binWidth: 1,
-		});
+		const rows = aggregate(
+			fixture.buildings,
+			(b) => b.district === 'ridgeland',
+			{ sizes: ALL_SIZES, metric: 'buildings', binWidth: 1 },
+			1,
+		);
 		expect(rows.reduce((a, r) => a + r.total, 0)).toBe(2);
+	});
+	it('divides units by the scope area for the per-square-mile metric', () => {
+		const rows = aggregate(
+			fixture.buildings,
+			inFlw,
+			{ sizes: ALL_SIZES, metric: 'units_per_sqmi', binWidth: 10 },
+			0.5,
+		);
+		expect(rows[idx(1973, 10)]?.['7+']).toBe(162);
+		expect(rows[idx(1910, 10)]?.total).toBe(10);
 	});
 });
 

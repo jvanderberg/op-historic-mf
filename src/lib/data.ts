@@ -6,7 +6,7 @@
 export const SIZE_CLASSES = ['2', '3', '4', '5', '6', '7+'] as const;
 export type SizeClass = (typeof SIZE_CLASSES)[number];
 
-export const DISTRICT_SLUGS = ['flw', 'ridgeland', 'rest'] as const;
+export const DISTRICT_SLUGS = ['flw', 'ridgeland', 'gunderson', 'rest'] as const;
 export type DistrictSlug = (typeof DISTRICT_SLUGS)[number];
 
 export type BuildingType = 'small_mf' | 'large_mf' | 'condo';
@@ -22,6 +22,8 @@ export interface District {
 	readonly nrDate: string;
 	readonly boundaryNote: string;
 	readonly sensitivityYear: number | null;
+	/** Land area in square miles, from the Village district polygons and the TIGER place polygon. */
+	readonly areaSqMi: number;
 }
 
 export interface Building {
@@ -106,6 +108,7 @@ function parseDistrict(v: unknown): District {
 		nrDate: str(v, 'nrDate'),
 		boundaryNote: str(v, 'boundaryNote'),
 		sensitivityYear: numOrNull(v, 'sensitivityYear'),
+		areaSqMi: num(v, 'areaSqMi'),
 	};
 }
 
