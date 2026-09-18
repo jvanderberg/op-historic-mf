@@ -39,6 +39,9 @@ export interface Building {
 	readonly pins: number;
 	/** 14-digit PIN with an Assessor page: the building's own PIN, or a condo building's first unit. */
 	readonly linkPin: string;
+	/** Parcel representative point, WGS84; null when the parcel could not be located. */
+	readonly lat: number | null;
+	readonly lon: number | null;
 }
 
 export interface ExplorerData {
@@ -146,6 +149,8 @@ function parseBuilding(v: unknown): Building {
 		yearSource: str(v, 'yearSource'),
 		pins: num(v, 'pins'),
 		linkPin: str(v, 'linkPin'),
+		lat: numOrNull(v, 'lat'),
+		lon: numOrNull(v, 'lon'),
 	};
 }
 

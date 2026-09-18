@@ -64,5 +64,13 @@ describe('App', () => {
 		expect(screen.getByRole('table')).toBeInTheDocument();
 		expect(screen.getByText('11 B ST')).toBeInTheDocument();
 		expect(screen.getByText('undated')).toBeInTheDocument();
+		expect(screen.getByRole('link', { name: '1607100003 (first unit)' })).toHaveAttribute(
+			'href',
+			'https://www.cookcountyassessor.com/pin/16071000031001',
+		);
+		expect(screen.getByRole('link', { name: '11 B ST' })).toHaveAttribute(
+			'href',
+			'https://www.google.com/maps/search/?api=1&query=41.88,-87.79',
+		);
 	});
 });

@@ -57,7 +57,21 @@ export function BuildingTable({ buildings, districts }: BuildingTableProps) {
 						return (
 							<tr key={b.id} className="border-t border-grid">
 								<td className="px-3 py-1.5 tabular-nums">{b.year ?? 'undated'}</td>
-								<td className="px-3 py-1.5">{b.address}</td>
+								<td className="px-3 py-1.5">
+									{b.lat === null || b.lon === null ? (
+										b.address
+									) : (
+										<a
+											href={`https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lon}`}
+											target="_blank"
+											rel="noreferrer"
+											title="Open in Google Maps"
+											className="text-ink underline decoration-grid underline-offset-2 hover:text-accent hover:decoration-accent"
+										>
+											{b.address}
+										</a>
+									)}
+								</td>
 								<td className="px-3 py-1.5 text-ink-2">{nameOf.get(b.district) ?? b.district}</td>
 								<td className="px-3 py-1.5 text-right tabular-nums">{b.units}</td>
 								<td className="px-3 py-1.5 text-ink-2">{TYPE_LABEL[b.type]}</td>
