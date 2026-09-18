@@ -3,6 +3,8 @@ import { ALL_SIZES, type BinWidth, type Metric } from './lib/bins';
 import { type DistrictSlug, isSizeClass, type SizeClass } from './lib/data';
 
 export type SelectableDistrict = Extract<DistrictSlug, 'flw' | 'ridgeland'>;
+/** Which panel a selection belongs to: the chosen district or the rest of the village. */
+export type PanelKey = 'district' | 'rest';
 
 export interface UrlState {
 	readonly district: SelectableDistrict;
@@ -15,6 +17,7 @@ export interface UrlState {
 
 export interface ExplorerState extends UrlState {
 	readonly selectedBin: number | null;
+	readonly selectedPanel: PanelKey | null;
 	readonly hoveredBin: number | null;
 	setDistrict: (d: SelectableDistrict) => void;
 	toggleSize: (s: SizeClass) => void;
@@ -22,7 +25,10 @@ export interface ExplorerState extends UrlState {
 	setMetric: (m: Metric) => void;
 	setBinWidth: (w: BinWidth) => void;
 	setSharedScale: (v: boolean) => void;
-	setSelectedBin: (i: number | null) => void;
+	/** Highlight a bar (single click); null clears. */
+	select: (bin: number | null, panel: PanelKey | null) => void;
+	/** Drill into a bar (double click): select it and open the building list. */
+	drill: (bin: number, panel: PanelKey) => void;
 	setHoveredBin: (i: number | null) => void;
 	setShowTable: (v: boolean) => void;
 	reset: () => void;
@@ -95,8 +101,10 @@ export function createExplorerStore(initial: UrlState = DEFAULTS) {
 	return create<ExplorerState>()((set) => ({
 		...initial,
 		selectedBin: null,
+		selectedPanel: null,
 		hoveredBin: null,
-		setDistrict: (district) => set({ district, selectedBin: null, hoveredBin: null }),
+		setDistrict: (district) =>
+			set({ district, selectedBin: null, selectedPanel: null, hoveredBin: null }),
 		toggleSize: (s) =>
 			set((st) => {
 				const next = new Set(st.sizes);
@@ -105,16 +113,18 @@ export function createExplorerStore(initial: UrlState = DEFAULTS) {
 				} else {
 					next.add(s);
 				}
-				return { sizes: next, selectedBin: null };
+				return { sizes: next, selectedBin: null, selectedPanel: null };
 			}),
-		setSizes: (s) => set({ sizes: new Set(s), selectedBin: null }),
+		setSizes: (s) => set({ sizes: new Set(s), selectedBin: null, selectedPanel: null }),
 		setMetric: (metric) => set({ metric }),
-		setBinWidth: (binWidth) => set({ binWidth, selectedBin: null, hoveredBin: null }),
+		setBinWidth: (binWidth) =>
+			set({ binWidth, selectedBin: null, selectedPanel: null, hoveredBin: null }),
 		setSharedScale: (sharedScale) => set({ sharedScale }),
-		setSelectedBin: (selectedBin) => set({ selectedBin }),
+		select: (selectedBin, selectedPanel) => set({ selectedBin, selectedPanel }),
+		drill: (selectedBin, selectedPanel) => set({ selectedBin, selectedPanel, showTable: true }),
 		setHoveredBin: (hoveredBin) => set({ hoveredBin }),
 		setShowTable: (showTable) => set({ showTable }),
-		reset: () => set({ ...DEFAULTS, selectedBin: null, hoveredBin: null }),
+		reset: () => set({ ...DEFAULTS, selectedBin: null, selectedPanel: null, hoveredBin: null }),
 	}));
 }
 

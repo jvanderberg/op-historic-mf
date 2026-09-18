@@ -36,10 +36,9 @@ async function main() {
 	await shot('light', {});
 	await shot('dark', { colorScheme: 'dark' });
 	await shot('selected-table', {}, async (page) => {
-		await page.getByRole('button', { name: /Show buildings/ }).click();
 		const targets = page.locator('figure').first().locator('button[aria-pressed]');
 		await targets.nth(12).hover();
-		await targets.nth(12).click();
+		await targets.nth(12).dblclick();
 	});
 	await shot('ridgeland', {}, async (page) => {
 		await page.locator('label', { hasText: 'Ridgeland - Oak Park' }).click();

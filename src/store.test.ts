@@ -27,12 +27,20 @@ describe('url state', () => {
 describe('store', () => {
 	it('toggles sizes and clears the selected bin', () => {
 		const store = createExplorerStore();
-		store.getState().setSelectedBin(3);
+		store.getState().select(3, 'district');
 		store.getState().toggleSize('2');
 		expect(store.getState().sizes.has('2')).toBe(false);
 		expect(store.getState().selectedBin).toBeNull();
+		expect(store.getState().selectedPanel).toBeNull();
 		store.getState().toggleSize('2');
 		expect(store.getState().sizes.has('2')).toBe(true);
+	});
+	it('drill selects the bar and opens the table', () => {
+		const store = createExplorerStore();
+		store.getState().drill(7, 'rest');
+		expect(store.getState().selectedBin).toBe(7);
+		expect(store.getState().selectedPanel).toBe('rest');
+		expect(store.getState().showTable).toBe(true);
 	});
 	it('reset restores defaults', () => {
 		const store = createExplorerStore();

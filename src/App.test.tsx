@@ -47,6 +47,16 @@ describe('App', () => {
 		await user.click(screen.getByRole('radio', { name: 'Units / sq mi' }));
 		expect(screen.getAllByRole('img', { name: /units \/ sq mi by year built/ })).toHaveLength(2);
 	});
+	it("double-clicking a bar lists that bar's buildings", async () => {
+		const user = userEvent.setup();
+		render(<App data={fixture} />);
+		const flwBar = screen.getByRole('button', { name: '1970-74: 81 units' });
+		await user.dblClick(flwBar);
+		expect(screen.getByRole('table')).toBeInTheDocument();
+		expect(screen.getByText('1 buildings built 1970-74 in Frank Lloyd Wright')).toBeInTheDocument();
+		expect(screen.getByText('3 A ST')).toBeInTheDocument();
+		expect(screen.queryByText('11 B ST')).not.toBeInTheDocument();
+	});
 	it('shows the building table on request', async () => {
 		const user = userEvent.setup();
 		render(<App data={fixture} />);

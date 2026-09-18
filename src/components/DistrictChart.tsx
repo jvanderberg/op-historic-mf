@@ -25,26 +25,17 @@ export interface DistrictChartProps {
 	readonly yMax: number;
 	readonly sizes: ReadonlySet<SizeClass>;
 	readonly hoveredBin: number | null;
+	/** Bin selected in this panel, or null when the selection is elsewhere. */
 	readonly selectedBin: number | null;
 	readonly onHover: (i: number | null) => void;
 	readonly onSelect: (i: number | null) => void;
+	readonly onDrill: (i: number) => void;
 }
 
 export function DistrictChart(props: DistrictChartProps) {
-	const {
-		title,
-		years,
-		rows,
-		bins,
-		binWidth,
-		metric,
-		yMax,
-		sizes,
-		hoveredBin,
-		selectedBin,
-		onHover,
-		onSelect,
-	} = props;
+	const { title, years, rows, bins, binWidth, metric, yMax, sizes, hoveredBin, selectedBin } =
+		props;
+	const { onHover, onSelect, onDrill } = props;
 	const wrapRef = useRef<HTMLDivElement | null>(null);
 	const width = useWidth(wrapRef);
 	const titleId = useId();
@@ -91,12 +82,20 @@ export function DistrictChart(props: DistrictChartProps) {
 							type="button"
 							aria-label={`${b.label}: ${formatValue(rows[i]?.total ?? 0)} ${METRIC_LABEL[metric]}`}
 							aria-pressed={selectedBin === i}
+							title="Click to highlight, double-click to list the buildings"
 							tabIndex={rows[i]?.total ? 0 : -1}
 							onMouseEnter={() => onHover(i)}
 							onMouseLeave={() => onHover(null)}
 							onFocus={() => onHover(i)}
 							onBlur={() => onHover(null)}
 							onClick={() => onSelect(selectedBin === i ? null : i)}
+							onDoubleClick={() => onDrill(i)}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									onDrill(i);
+								}
+							}}
 							className="h-full cursor-pointer bg-transparent focus-visible:outline-1 focus-visible:outline-accent"
 							style={{ width: g.slot }}
 						/>

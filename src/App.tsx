@@ -1,5 +1,5 @@
 import { Table2 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { BuildingTable } from './components/BuildingTable';
 import { DistrictChart } from './components/DistrictChart';
@@ -19,7 +19,7 @@ import {
 	type Scope,
 } from './lib/bins';
 import { type District, type ExplorerData, SIZE_CLASSES } from './lib/data';
-import { type SelectableDistrict, useExplorerStore } from './store';
+import { type PanelKey, type SelectableDistrict, useExplorerStore } from './store';
 
 export interface AppProps {
 	readonly data: ExplorerData;
@@ -40,6 +40,7 @@ const SCALES: readonly { value: 'own' | 'shared'; label: string }[] = [
 	{ value: 'own', label: 'Own scale' },
 	{ value: 'shared', label: 'Same scale' },
 ];
+const REST_TITLE = 'Rest of Oak Park (outside the historic districts)';
 
 function toBinWidth(v: BinKey): BinWidth {
 	if (v === '1') {
@@ -48,16 +49,41 @@ function toBinWidth(v: BinKey): BinWidth {
 	return v === '5' ? 5 : 10;
 }
 
-function selectableDistricts(
-	data: ExplorerData,
-): readonly (District & { readonly slug: SelectableDistrict })[] {
-	const out: (District & { readonly slug: SelectableDistrict })[] = [];
+type Selectable = District & { readonly slug: SelectableDistrict };
+
+function selectableDistricts(data: ExplorerData): readonly Selectable[] {
+	const out: Selectable[] = [];
 	for (const d of data.districts) {
 		if ((d.slug === 'flw' || d.slug === 'ridgeland') && d.localYear !== null && d.nrYear !== null) {
 			out.push({ ...d, slug: d.slug });
 		}
 	}
 	return out;
+}
+
+interface Panel {
+	readonly key: PanelKey;
+	readonly title: string;
+	readonly scope: Scope;
+	readonly areaSqMi: number;
+}
+
+function panelsFor(district: Selectable, data: ExplorerData): readonly Panel[] {
+	const rest = data.districts.find((d) => d.slug === 'rest');
+	return [
+		{
+			key: 'district',
+			title: district.name,
+			scope: (b) => b.district === district.slug,
+			areaSqMi: district.areaSqMi,
+		},
+		{
+			key: 'rest',
+			title: REST_TITLE,
+			scope: (b) => b.district === 'rest',
+			areaSqMi: rest?.areaSqMi ?? 0,
+		},
+	];
 }
 
 export function App({ data }: AppProps) {
@@ -67,6 +93,7 @@ export function App({ data }: AppProps) {
 	const binWidth = useExplorerStore((s) => s.binWidth);
 	const sharedScale = useExplorerStore((s) => s.sharedScale);
 	const selectedBin = useExplorerStore((s) => s.selectedBin);
+	const selectedPanel = useExplorerStore((s) => s.selectedPanel);
 	const hoveredBin = useExplorerStore((s) => s.hoveredBin);
 	const showTable = useExplorerStore((s) => s.showTable);
 	const actions = useExplorerStore(
@@ -77,59 +104,61 @@ export function App({ data }: AppProps) {
 			setMetric: s.setMetric,
 			setBinWidth: s.setBinWidth,
 			setSharedScale: s.setSharedScale,
-			setSelectedBin: s.setSelectedBin,
+			select: s.select,
+			drill: s.drill,
 			setHoveredBin: s.setHoveredBin,
 			setShowTable: s.setShowTable,
 		})),
 	);
+	const tableRef = useRef<HTMLDivElement | null>(null);
 
 	const districts = useMemo(() => selectableDistricts(data), [data]);
 	const district = districts.find((d) => d.slug === districtSlug) ?? districts[0];
 	const bins = useMemo(() => makeBins(binWidth), [binWidth]);
 	const filters = useMemo(() => ({ sizes, metric, binWidth }), [sizes, metric, binWidth]);
+	const years = { localYear: district?.localYear ?? 0, nrYear: district?.nrYear ?? 0 };
 
 	const panels = useMemo(() => {
 		if (district === undefined) {
 			return [];
 		}
-		const years = { localYear: district.localYear ?? 0, nrYear: district.nrYear ?? 0 };
-		const inside: Scope = (b) => b.district === district.slug;
-		const outside: Scope = (b) => b.district === 'rest';
-		const rest = data.districts.find((d) => d.slug === 'rest');
-		return [
-			{ key: 'district', title: district.name, scope: inside, areaSqMi: district.areaSqMi },
-			{
-				key: 'rest',
-				title: 'Rest of Oak Park (outside the historic districts)',
-				scope: outside,
-				areaSqMi: rest?.areaSqMi ?? 0,
-			},
-		].map((p) => {
+		return panelsFor(district, data).map((p) => {
 			const rows = aggregate(data.buildings, p.scope, filters, p.areaSqMi);
+			const cut = district.localYear ?? 0;
 			return {
 				...p,
-				years,
 				rows,
 				max: maxTotal(rows),
-				ba: beforeAfter(data.buildings, p.scope, years.localYear, sizes),
+				ba: beforeAfter(data.buildings, p.scope, cut, sizes),
 			};
 		});
 	}, [data, district, filters, sizes]);
 	const globalMax = Math.max(1, ...panels.map((p) => p.max));
 
+	const scopeOfSelection = panels.find((p) => p.key === selectedPanel)?.scope;
 	const tableRows = useMemo(
 		() =>
 			data.buildings
 				.filter((b) => matchesFilter(b, sizes))
+				.filter((b) => scopeOfSelection === undefined || scopeOfSelection(b))
 				.filter(
 					(b) =>
 						selectedBin === null || (b.year !== null && binIndex(b.year, binWidth) === selectedBin),
 				)
 				.slice()
 				.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.address.localeCompare(b.address)),
-		[data, sizes, selectedBin, binWidth],
+		[data, sizes, selectedBin, scopeOfSelection, binWidth],
 	);
 	const selectedLabel = selectedBin === null ? null : (bins[selectedBin]?.label ?? null);
+	const selectedTitle = panels.find((p) => p.key === selectedPanel)?.title ?? null;
+
+	// A drill (double-click) opens the table; bring it into view.
+	const drillCount = useExplorerStore((s) => (s.showTable && s.selectedBin !== null ? 1 : 0));
+	useEffect(() => {
+		if (drillCount === 1) {
+			tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}, [drillCount]);
 
 	return (
 		<main className="mx-auto max-w-5xl px-3 py-4 text-ink sm:px-5 sm:py-6">
@@ -174,7 +203,7 @@ export function App({ data }: AppProps) {
 					<section key={p.key} className="flex flex-col gap-2">
 						<DistrictChart
 							title={p.title}
-							years={p.years}
+							years={years}
 							rows={p.rows}
 							bins={bins}
 							binWidth={binWidth}
@@ -182,16 +211,17 @@ export function App({ data }: AppProps) {
 							yMax={sharedScale ? globalMax : Math.max(1, p.max)}
 							sizes={sizes}
 							hoveredBin={hoveredBin}
-							selectedBin={selectedBin}
+							selectedBin={selectedPanel === p.key ? selectedBin : null}
 							onHover={actions.setHoveredBin}
-							onSelect={actions.setSelectedBin}
+							onSelect={(i) => actions.select(i, i === null ? null : p.key)}
+							onDrill={(i) => actions.drill(i, p.key)}
 						/>
-						<Kpis scope={p.key} cutYear={p.years.localYear} ba={p.ba} areaSqMi={p.areaSqMi} />
+						<Kpis scope={p.key} cutYear={years.localYear} ba={p.ba} areaSqMi={p.areaSqMi} />
 					</section>
 				))}
 			</div>
 
-			<div className="mt-6 flex flex-wrap items-center gap-3">
+			<div ref={tableRef} className="mt-6 flex scroll-mt-4 flex-wrap items-center gap-3">
 				<Button onClick={() => actions.setShowTable(!showTable)} aria-expanded={showTable}>
 					<Table2 className="size-3.5" aria-hidden="true" />
 					{showTable ? 'Hide' : 'Show'} buildings
@@ -199,12 +229,13 @@ export function App({ data }: AppProps) {
 				<span className="text-sm text-ink-2">
 					{tableRows.length.toLocaleString()} buildings
 					{selectedLabel === null ? '' : ` built ${selectedLabel}`}
+					{selectedTitle === null ? '' : ` in ${selectedTitle}`}
 				</span>
 				{selectedBin === null ? null : (
 					<button
 						type="button"
 						className="text-sm text-accent underline-offset-2 hover:underline"
-						onClick={() => actions.setSelectedBin(null)}
+						onClick={() => actions.select(null, null)}
 					>
 						clear
 					</button>
@@ -225,7 +256,7 @@ export function App({ data }: AppProps) {
 					op-block-typology
 				</a>
 				. Buildings standing in 2026 only. Dashed line: local designation of the selected district;
-				dotted: its National Register listing.
+				dotted: its National Register listing. Double-click a bar to list its buildings.
 			</footer>
 		</main>
 	);
