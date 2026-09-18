@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [react()],
+	define: { __DATA_HASH__: JSON.stringify('test') },
 	resolve: {
 		alias: { '@': path.resolve(import.meta.dirname, './src') },
 	},

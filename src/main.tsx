@@ -12,7 +12,7 @@ if (container === null) {
 const root = createRoot(container);
 bindUrlSync(useExplorerStore);
 
-loadExplorerData(`${import.meta.env.BASE_URL}data/mf_buildings.json`)
+loadExplorerData(`${import.meta.env.BASE_URL}data/mf_buildings.json?v=${__DATA_HASH__}`)
 	.then((data) => {
 		root.render(
 			<StrictMode>

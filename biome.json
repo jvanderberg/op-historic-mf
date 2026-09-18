@@ -17,7 +17,8 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single"
-		}
+		},
+		"globals": ["__DATA_HASH__"]
 	},
 	"linter": {
 		"enabled": true,
