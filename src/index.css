@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/geist';
+
+:root {
+	color-scheme: light;
+	--surface-1: #fcfcfb;
+	--surface-2: #f0efec;
+	--text-primary: #0b0b0b;
+	--text-secondary: #52514e;
+	--text-muted: #8a8985;
+	--grid: #e4e3df;
+	--series-1: #2a78d6;
+	--series-2: #eb6834;
+	--series-3: #1baf7a;
+	--series-4: #eda100;
+	--series-5: #e87ba4;
+	--series-6: #008300;
+	--accent: #2a78d6;
+	font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		color-scheme: dark;
+		--surface-1: #1a1a19;
+		--surface-2: #262625;
+		--text-primary: #ffffff;
+		--text-secondary: #c3c2b7;
+		--text-muted: #8a8985;
+		--grid: #383835;
+		--series-1: #3987e5;
+		--series-2: #d95926;
+		--series-3: #199e70;
+		--series-4: #c98500;
+		--series-5: #d55181;
+		--series-6: #008300;
+		--accent: #3987e5;
+	}
+}
+
+@theme inline {
+	--color-surface-1: var(--surface-1);
+	--color-surface-2: var(--surface-2);
+	--color-ink: var(--text-primary);
+	--color-ink-2: var(--text-secondary);
+	--color-ink-3: var(--text-muted);
+	--color-grid: var(--grid);
+	--color-accent: var(--accent);
+}
+
+html,
+body {
+	background: var(--surface-1);
+	color: var(--text-primary);
+}
