@@ -19,11 +19,15 @@ describe('App', () => {
 		).toBeInTheDocument();
 		expect(screen.getAllByText('local district 1972').length).toBeGreaterThan(0);
 		expect(screen.getByText('Before 1994')).toBeInTheDocument();
+		expect(
+			screen.getByRole('img', { name: /Rest of Oak Park: multi-family units/ }),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/local district null/)).not.toBeInTheDocument();
 	});
 	it('filtering by size changes the KPI and the building count', async () => {
 		const user = userEvent.setup();
 		render(<App data={fixture} />);
-		expect(screen.getByText('6 buildings')).toBeInTheDocument();
+		expect(screen.getByText('7 buildings')).toBeInTheDocument();
 		await user.click(screen.getByRole('button', { name: '7+ units' }));
 		expect(screen.getByRole('button', { name: '7+ units' })).toHaveAttribute(
 			'aria-pressed',

@@ -3,6 +3,7 @@ import type { District } from '@/lib/data';
 
 export interface KpisProps {
 	readonly district: District;
+	readonly cutYear: number;
 	readonly ba: BeforeAfter;
 }
 
@@ -20,19 +21,11 @@ function Tile({ label, buildings, units }: { label: string; buildings: number; u
 	);
 }
 
-export function Kpis({ district, ba }: KpisProps) {
+export function Kpis({ district, cutYear, ba }: KpisProps) {
 	return (
-		<div className="grid grid-cols-2 gap-2">
-			<Tile
-				label={`Before ${district.localYear}`}
-				buildings={ba.beforeBuildings}
-				units={ba.beforeUnits}
-			/>
-			<Tile
-				label={`${district.localYear} and after`}
-				buildings={ba.afterBuildings}
-				units={ba.afterUnits}
-			/>
+		<div className="grid grid-cols-2 gap-2" data-district={district.slug}>
+			<Tile label={`Before ${cutYear}`} buildings={ba.beforeBuildings} units={ba.beforeUnits} />
+			<Tile label={`${cutYear} and after`} buildings={ba.afterBuildings} units={ba.afterUnits} />
 		</div>
 	);
 }

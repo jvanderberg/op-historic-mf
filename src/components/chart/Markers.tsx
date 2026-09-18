@@ -3,6 +3,9 @@ import { type Geometry, MARGIN } from './geometry';
 
 /** Designation markers: dashed line for the local district, dotted for the National Register. */
 export function Markers({ g, district }: { readonly g: Geometry; readonly district: District }) {
+	if (district.localYear === null || district.nrYear === null) {
+		return null;
+	}
 	const xl = g.yearX(district.localYear);
 	const xn = g.yearX(district.nrYear);
 	const nrAfter = district.nrYear > district.localYear;

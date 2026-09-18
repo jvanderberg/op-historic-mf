@@ -46,14 +46,8 @@ export function DistrictChart(props: DistrictChartProps) {
 
 	return (
 		<figure className="relative" aria-labelledby={titleId}>
-			<figcaption
-				id={titleId}
-				className="mb-1 flex flex-wrap items-baseline justify-between gap-x-4"
-			>
-				<span className="text-base font-semibold text-ink">{district.name}</span>
-				<span className="text-xs text-ink-2">
-					local historic district {district.localYear}, National Register {district.nrYear}
-				</span>
+			<figcaption id={titleId} className="mb-1 text-base font-semibold text-ink">
+				{district.name}
 			</figcaption>
 			<div ref={wrapRef} className="relative w-full">
 				<svg

@@ -77,7 +77,7 @@ export function App({ data }: AppProps) {
 					district: d,
 					rows,
 					max: maxTotal(rows),
-					ba: beforeAfter(data.buildings, d.slug, d.localYear, sizes),
+					ba: d.localYear === null ? null : beforeAfter(data.buildings, d.slug, d.localYear, sizes),
 				};
 			}),
 		[data, filters, sizes],
@@ -144,7 +144,9 @@ export function App({ data }: AppProps) {
 							onHover={actions.setHoveredBin}
 							onSelect={actions.setSelectedBin}
 						/>
-						<Kpis district={p.district} ba={p.ba} />
+						{p.district.localYear === null || p.ba === null ? null : (
+							<Kpis district={p.district} cutYear={p.district.localYear} ba={p.ba} />
+						)}
 					</section>
 				))}
 			</div>
@@ -182,9 +184,8 @@ export function App({ data }: AppProps) {
 				>
 					op-block-typology
 				</a>
-				. Buildings standing in 2026 only. Dashed line: local designation
-				{data.districts.map((d) => ` (${d.name} ${d.localYear})`).join(',')}; dotted: National
-				Register.
+				. Buildings standing in 2026 only. Dashed line: local designation; dotted: National Register
+				listing.
 			</footer>
 		</main>
 	);

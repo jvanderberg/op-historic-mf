@@ -6,7 +6,7 @@
 export const SIZE_CLASSES = ['2', '3', '4', '5', '6', '7+'] as const;
 export type SizeClass = (typeof SIZE_CLASSES)[number];
 
-export const DISTRICT_SLUGS = ['flw', 'ridgeland'] as const;
+export const DISTRICT_SLUGS = ['flw', 'ridgeland', 'rest'] as const;
 export type DistrictSlug = (typeof DISTRICT_SLUGS)[number];
 
 export type BuildingType = 'small_mf' | 'large_mf' | 'condo';
@@ -14,13 +14,14 @@ export type BuildingType = 'small_mf' | 'large_mf' | 'condo';
 export interface District {
 	readonly name: string;
 	readonly slug: DistrictSlug;
-	readonly localYear: number;
+	/** Year of the Village's local designation; null for the rest-of-village comparison. */
+	readonly localYear: number | null;
 	readonly localDate: string;
 	readonly localOrdinance: string;
-	readonly nrYear: number;
+	readonly nrYear: number | null;
 	readonly nrDate: string;
 	readonly boundaryNote: string;
-	readonly sensitivityYear: number;
+	readonly sensitivityYear: number | null;
 }
 
 export interface Building {
@@ -79,6 +80,14 @@ function num(o: Record<string, unknown>, k: string): number {
 	return v;
 }
 
+function numOrNull(o: Record<string, unknown>, k: string): number | null {
+	const v = o[k];
+	if (v === null || v === undefined) {
+		return null;
+	}
+	return num(o, k);
+}
+
 function parseDistrict(v: unknown): District {
 	if (!isRecord(v)) {
 		throw new TypeError('district is not an object');
@@ -90,13 +99,13 @@ function parseDistrict(v: unknown): District {
 	return {
 		name: str(v, 'name'),
 		slug,
-		localYear: num(v, 'localYear'),
+		localYear: numOrNull(v, 'localYear'),
 		localDate: str(v, 'localDate'),
 		localOrdinance: str(v, 'localOrdinance'),
-		nrYear: num(v, 'nrYear'),
+		nrYear: numOrNull(v, 'nrYear'),
 		nrDate: str(v, 'nrDate'),
 		boundaryNote: str(v, 'boundaryNote'),
-		sensitivityYear: num(v, 'sensitivityYear'),
+		sensitivityYear: numOrNull(v, 'sensitivityYear'),
 	};
 }
 
