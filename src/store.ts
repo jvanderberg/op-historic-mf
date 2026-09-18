@@ -1,15 +1,22 @@
 import { create } from 'zustand';
 import { ALL_SIZES, type BinWidth, type Metric } from './lib/bins';
-import { isSizeClass, type SizeClass } from './lib/data';
+import { type DistrictSlug, isSizeClass, type SizeClass } from './lib/data';
 
-export interface ExplorerState {
+export type SelectableDistrict = Exclude<DistrictSlug, 'rest'>;
+
+export interface UrlState {
+	readonly district: SelectableDistrict;
 	readonly sizes: ReadonlySet<SizeClass>;
 	readonly metric: Metric;
 	readonly binWidth: BinWidth;
 	readonly sharedScale: boolean;
+	readonly showTable: boolean;
+}
+
+export interface ExplorerState extends UrlState {
 	readonly selectedBin: number | null;
 	readonly hoveredBin: number | null;
-	readonly showTable: boolean;
+	setDistrict: (d: SelectableDistrict) => void;
 	toggleSize: (s: SizeClass) => void;
 	setSizes: (s: readonly SizeClass[]) => void;
 	setMetric: (m: Metric) => void;
@@ -21,15 +28,8 @@ export interface ExplorerState {
 	reset: () => void;
 }
 
-export interface UrlState {
-	readonly sizes: ReadonlySet<SizeClass>;
-	readonly metric: Metric;
-	readonly binWidth: BinWidth;
-	readonly sharedScale: boolean;
-	readonly showTable: boolean;
-}
-
 const DEFAULTS: UrlState = {
+	district: 'flw',
 	sizes: ALL_SIZES,
 	metric: 'units',
 	binWidth: 5,
@@ -46,16 +46,14 @@ export function parseUrlState(search: string): UrlState {
 	const sizesParam = p.get('sizes');
 	let sizes: ReadonlySet<SizeClass> = DEFAULTS.sizes;
 	if (sizesParam !== null) {
-		const parsed = sizesParam.split(',').filter(isSizeClass);
-		sizes = new Set(parsed);
+		sizes = new Set(sizesParam.split(',').filter(isSizeClass));
 	}
-	const metric: Metric = p.get('metric') === 'buildings' ? 'buildings' : 'units';
 	const binParam = Number(p.get('bin'));
-	const binWidth: BinWidth = isBinWidth(binParam) ? binParam : DEFAULTS.binWidth;
 	return {
+		district: p.get('district') === 'ridgeland' ? 'ridgeland' : 'flw',
 		sizes,
-		metric,
-		binWidth,
+		metric: p.get('metric') === 'buildings' ? 'buildings' : 'units',
+		binWidth: isBinWidth(binParam) ? binParam : DEFAULTS.binWidth,
 		sharedScale: p.get('scale') === 'shared',
 		showTable: p.get('table') === '1',
 	};
@@ -63,6 +61,9 @@ export function parseUrlState(search: string): UrlState {
 
 export function serializeUrlState(s: UrlState): string {
 	const p = new URLSearchParams();
+	if (s.district !== DEFAULTS.district) {
+		p.set('district', s.district);
+	}
 	const sizes = [...s.sizes];
 	if (sizes.length !== ALL_SIZES.size) {
 		p.set('sizes', sizes.join(','));
@@ -88,6 +89,7 @@ export function createExplorerStore(initial: UrlState = DEFAULTS) {
 		...initial,
 		selectedBin: null,
 		hoveredBin: null,
+		setDistrict: (district) => set({ district, selectedBin: null, hoveredBin: null }),
 		toggleSize: (s) =>
 			set((st) => {
 				const next = new Set(st.sizes);

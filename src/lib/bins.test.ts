@@ -22,7 +22,7 @@ describe('makeBins', () => {
 
 describe('aggregate', () => {
 	it('stacks units by size class per bin and respects the filter', () => {
-		const rows = aggregate(fixture.buildings, 'flw', {
+		const rows = aggregate(fixture.buildings, (b) => b.district === 'flw', {
 			sizes: ALL_SIZES,
 			metric: 'units',
 			binWidth: 10,
@@ -39,7 +39,7 @@ describe('aggregate', () => {
 		expect(rows[i1910]?.total).toBe(5);
 		expect(rows[i1970]?.['7+']).toBe(81);
 		expect(maxTotal(rows)).toBe(81);
-		const only2 = aggregate(fixture.buildings, 'flw', {
+		const only2 = aggregate(fixture.buildings, (b) => b.district === 'flw', {
 			sizes: new Set(['2']),
 			metric: 'buildings',
 			binWidth: 10,
@@ -47,8 +47,16 @@ describe('aggregate', () => {
 		expect(only2[i1910]?.total).toBe(1);
 		expect(only2[i1970]?.total).toBe(0);
 	});
+	it('a scope can be everything outside a district', () => {
+		const rows = aggregate(fixture.buildings, (b) => b.district !== 'flw', {
+			sizes: ALL_SIZES,
+			metric: 'buildings',
+			binWidth: 1,
+		});
+		expect(rows.reduce((a, r) => a + r.total, 0)).toBe(3);
+	});
 	it('ignores undated buildings and other districts', () => {
-		const rows = aggregate(fixture.buildings, 'ridgeland', {
+		const rows = aggregate(fixture.buildings, (b) => b.district === 'ridgeland', {
 			sizes: ALL_SIZES,
 			metric: 'buildings',
 			binWidth: 1,
@@ -59,7 +67,7 @@ describe('aggregate', () => {
 
 describe('beforeAfter', () => {
 	it('splits at the cut year and reports undated separately', () => {
-		const ba = beforeAfter(fixture.buildings, 'ridgeland', 1994, ALL_SIZES);
+		const ba = beforeAfter(fixture.buildings, (b) => b.district === 'ridgeland', 1994, ALL_SIZES);
 		expect(ba).toEqual({
 			beforeBuildings: 1,
 			beforeUnits: 12,
@@ -68,7 +76,7 @@ describe('beforeAfter', () => {
 			undatedBuildings: 1,
 			undatedUnits: 2,
 		});
-		const flw = beforeAfter(fixture.buildings, 'flw', 1972, new Set(['7+']));
+		const flw = beforeAfter(fixture.buildings, (b) => b.district === 'flw', 1972, new Set(['7+']));
 		expect(flw.beforeBuildings).toBe(0);
 		expect(flw.afterUnits).toBe(81);
 	});

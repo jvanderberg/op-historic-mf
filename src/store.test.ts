@@ -5,8 +5,9 @@ describe('url state', () => {
 		expect(serializeUrlState(parseUrlState(''))).toBe('');
 	});
 	it('round-trips every field', () => {
-		const q = '?sizes=2,7%2B&metric=buildings&bin=10&scale=shared&table=1';
+		const q = '?district=ridgeland&sizes=2,7%2B&metric=buildings&bin=10&scale=shared&table=1';
 		const s = parseUrlState(q);
+		expect(s.district).toBe('ridgeland');
 		expect([...s.sizes]).toEqual(['2', '7+']);
 		expect(s.metric).toBe('buildings');
 		expect(s.binWidth).toBe(10);
@@ -15,7 +16,8 @@ describe('url state', () => {
 		expect(parseUrlState(serializeUrlState(s))).toEqual(s);
 	});
 	it('drops unknown values', () => {
-		const s = parseUrlState('?sizes=9,2&bin=7&metric=x');
+		const s = parseUrlState('?district=nope&sizes=9,2&bin=7&metric=x');
+		expect(s.district).toBe('flw');
 		expect([...s.sizes]).toEqual(['2']);
 		expect(s.binWidth).toBe(5);
 		expect(s.metric).toBe('units');

@@ -16,9 +16,10 @@ import {
 	makeBins,
 	matchesFilter,
 	maxTotal,
+	type Scope,
 } from './lib/bins';
-import { type ExplorerData, SIZE_CLASSES } from './lib/data';
-import { useExplorerStore } from './store';
+import { type District, type ExplorerData, SIZE_CLASSES } from './lib/data';
+import { type SelectableDistrict, useExplorerStore } from './store';
 
 export interface AppProps {
 	readonly data: ExplorerData;
@@ -46,7 +47,20 @@ function toBinWidth(v: BinKey): BinWidth {
 	return v === '5' ? 5 : 10;
 }
 
+function selectableDistricts(
+	data: ExplorerData,
+): readonly (District & { readonly slug: SelectableDistrict })[] {
+	const out: (District & { readonly slug: SelectableDistrict })[] = [];
+	for (const d of data.districts) {
+		if (d.slug !== 'rest' && d.localYear !== null && d.nrYear !== null) {
+			out.push({ ...d, slug: d.slug });
+		}
+	}
+	return out;
+}
+
 export function App({ data }: AppProps) {
+	const districtSlug = useExplorerStore((s) => s.district);
 	const sizes = useExplorerStore((s) => s.sizes);
 	const metric = useExplorerStore((s) => s.metric);
 	const binWidth = useExplorerStore((s) => s.binWidth);
@@ -56,6 +70,7 @@ export function App({ data }: AppProps) {
 	const showTable = useExplorerStore((s) => s.showTable);
 	const actions = useExplorerStore(
 		useShallow((s) => ({
+			setDistrict: s.setDistrict,
 			toggleSize: s.toggleSize,
 			setSizes: s.setSizes,
 			setMetric: s.setMetric,
@@ -67,22 +82,33 @@ export function App({ data }: AppProps) {
 		})),
 	);
 
+	const districts = useMemo(() => selectableDistricts(data), [data]);
+	const district = districts.find((d) => d.slug === districtSlug) ?? districts[0];
 	const bins = useMemo(() => makeBins(binWidth), [binWidth]);
 	const filters = useMemo(() => ({ sizes, metric, binWidth }), [sizes, metric, binWidth]);
-	const perDistrict = useMemo(
-		() =>
-			data.districts.map((d) => {
-				const rows = aggregate(data.buildings, d.slug, filters);
-				return {
-					district: d,
-					rows,
-					max: maxTotal(rows),
-					ba: d.localYear === null ? null : beforeAfter(data.buildings, d.slug, d.localYear, sizes),
-				};
-			}),
-		[data, filters, sizes],
-	);
-	const globalMax = Math.max(1, ...perDistrict.map((p) => p.max));
+
+	const panels = useMemo(() => {
+		if (district === undefined) {
+			return [];
+		}
+		const years = { localYear: district.localYear ?? 0, nrYear: district.nrYear ?? 0 };
+		const inside: Scope = (b) => b.district === district.slug;
+		const outside: Scope = (b) => b.district !== district.slug;
+		return [
+			{ key: 'district', title: district.name, scope: inside },
+			{ key: 'rest', title: `Rest of Oak Park (outside ${district.name})`, scope: outside },
+		].map((p) => {
+			const rows = aggregate(data.buildings, p.scope, filters);
+			return {
+				...p,
+				years,
+				rows,
+				max: maxTotal(rows),
+				ba: beforeAfter(data.buildings, p.scope, years.localYear, sizes),
+			};
+		});
+	}, [data, district, filters, sizes]);
+	const globalMax = Math.max(1, ...panels.map((p) => p.max));
 
 	const tableRows = useMemo(
 		() =>
@@ -101,10 +127,18 @@ export function App({ data }: AppProps) {
 	return (
 		<main className="mx-auto max-w-5xl px-3 py-4 text-ink sm:px-5 sm:py-6">
 			<h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-				Multi-family buildings in Oak Park's historic districts, by year built
+				Multi-family buildings by year built: historic district vs the rest of Oak Park
 			</h1>
 
-			<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+			<div className="mt-4 flex flex-wrap items-center gap-2">
+				<Segmented
+					label="District"
+					value={district?.slug ?? 'flw'}
+					options={districts.map((d) => ({ value: d.slug, label: d.name }))}
+					onChange={actions.setDistrict}
+				/>
+			</div>
+			<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
 				<SizeLegend
 					sizes={sizes}
 					onToggle={actions.toggleSize}
@@ -129,10 +163,11 @@ export function App({ data }: AppProps) {
 			</div>
 
 			<div className="mt-6 flex flex-col gap-7">
-				{perDistrict.map((p) => (
-					<section key={p.district.slug} className="flex flex-col gap-2">
+				{panels.map((p) => (
+					<section key={p.key} className="flex flex-col gap-2">
 						<DistrictChart
-							district={p.district}
+							title={p.title}
+							years={p.years}
 							rows={p.rows}
 							bins={bins}
 							binWidth={binWidth}
@@ -144,9 +179,7 @@ export function App({ data }: AppProps) {
 							onHover={actions.setHoveredBin}
 							onSelect={actions.setSelectedBin}
 						/>
-						{p.district.localYear === null || p.ba === null ? null : (
-							<Kpis district={p.district} cutYear={p.district.localYear} ba={p.ba} />
-						)}
+						<Kpis scope={p.key} cutYear={p.years.localYear} ba={p.ba} />
 					</section>
 				))}
 			</div>
@@ -184,8 +217,8 @@ export function App({ data }: AppProps) {
 				>
 					op-block-typology
 				</a>
-				. Buildings standing in 2026 only. Dashed line: local designation; dotted: National Register
-				listing.
+				. Buildings standing in 2026 only. Dashed line: local designation of the selected district;
+				dotted: its National Register listing.
 			</footer>
 		</main>
 	);

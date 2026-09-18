@@ -1,4 +1,7 @@
-import { type Building, type DistrictSlug, SIZE_CLASSES, type SizeClass } from './data';
+import { type Building, SIZE_CLASSES, type SizeClass } from './data';
+
+/** Which buildings a panel covers, e.g. "in this district" or "everything else". */
+export type Scope = (b: Building) => boolean;
 
 export type Metric = 'buildings' | 'units';
 export type BinWidth = 1 | 5 | 10;
@@ -60,13 +63,13 @@ function weight(b: Building, metric: Metric): number {
 /** One stacked row per bin for one district under the given filters. */
 export function aggregate(
 	buildings: readonly Building[],
-	district: DistrictSlug,
+	scope: Scope,
 	filters: Filters,
 ): readonly StackRow[] {
 	const bins = makeBins(filters.binWidth);
 	const rows = bins.map(() => ({ ...emptyRow() }) as Record<SizeClass, number> & { total: number });
 	for (const b of buildings) {
-		if (b.district !== district || b.year === null || !matchesFilter(b, filters.sizes)) {
+		if (!scope(b) || b.year === null || !matchesFilter(b, filters.sizes)) {
 			continue;
 		}
 		const i = binIndex(b.year, filters.binWidth);
@@ -95,7 +98,7 @@ export interface BeforeAfter {
 
 export function beforeAfter(
 	buildings: readonly Building[],
-	district: DistrictSlug,
+	scope: Scope,
 	cutYear: number,
 	sizes: ReadonlySet<SizeClass>,
 ): BeforeAfter {
@@ -106,7 +109,7 @@ export function beforeAfter(
 	let undatedBuildings = 0;
 	let undatedUnits = 0;
 	for (const b of buildings) {
-		if (b.district !== district || !matchesFilter(b, sizes)) {
+		if (!scope(b) || !matchesFilter(b, sizes)) {
 			continue;
 		}
 		if (b.year === null) {

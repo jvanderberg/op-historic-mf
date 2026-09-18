@@ -9,22 +9,28 @@ beforeEach(() => {
 });
 
 describe('App', () => {
-	it('renders both districts with designation years and KPIs', () => {
+	it('shows the selected district against the rest of the village', async () => {
+		const user = userEvent.setup();
 		render(<App data={fixture} />);
 		expect(
-			screen.getByRole('img', { name: /Frank Lloyd Wright: multi-family units/ }),
+			screen.getByRole('img', { name: /^Frank Lloyd Wright: multi-family units/ }),
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole('img', { name: /Ridgeland - Oak Park: multi-family units/ }),
+			screen.getByRole('img', {
+				name: /Rest of Oak Park \(outside Frank Lloyd Wright\): multi-family units/,
+			}),
 		).toBeInTheDocument();
-		expect(screen.getAllByText('local district 1972').length).toBeGreaterThan(0);
-		expect(screen.getByText('Before 1994')).toBeInTheDocument();
+		expect(screen.queryByRole('img', { name: /^Ridgeland/ })).not.toBeInTheDocument();
+		expect(screen.getAllByText('local district 1972')).toHaveLength(2);
+		expect(screen.getAllByText('Before 1972')).toHaveLength(2);
+		await user.click(screen.getByRole('radio', { name: 'Ridgeland - Oak Park' }));
 		expect(
-			screen.getByRole('img', { name: /Rest of Oak Park: multi-family units/ }),
+			screen.getByRole('img', { name: /^Ridgeland - Oak Park: multi-family units/ }),
 		).toBeInTheDocument();
-		expect(screen.queryByText(/local district null/)).not.toBeInTheDocument();
+		expect(screen.getAllByText('Before 1994')).toHaveLength(2);
+		expect(screen.getAllByText('local district 1994')).toHaveLength(2);
 	});
-	it('filtering by size changes the KPI and the building count', async () => {
+	it('filtering by size changes the building count', async () => {
 		const user = userEvent.setup();
 		render(<App data={fixture} />);
 		expect(screen.getByText('7 buildings')).toBeInTheDocument();

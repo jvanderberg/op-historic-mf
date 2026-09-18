@@ -1,15 +1,16 @@
 import { useId, useRef } from 'react';
 import type { Bin, BinWidth, Metric, StackRow } from '@/lib/bins';
-import type { District, SizeClass } from '@/lib/data';
+import type { SizeClass } from '@/lib/data';
 import { useWidth } from '@/lib/useWidth';
 import { Axes } from './chart/Axes';
 import { Bars } from './chart/Bars';
 import { geometry, HEIGHT, MARGIN } from './chart/geometry';
 import { HoverCard } from './chart/HoverCard';
-import { Markers } from './chart/Markers';
+import { Markers, type MarkerYears } from './chart/Markers';
 
 export interface DistrictChartProps {
-	readonly district: District;
+	readonly title: string;
+	readonly years: MarkerYears;
 	readonly rows: readonly StackRow[];
 	readonly bins: readonly Bin[];
 	readonly binWidth: BinWidth;
@@ -24,7 +25,8 @@ export interface DistrictChartProps {
 
 export function DistrictChart(props: DistrictChartProps) {
 	const {
-		district,
+		title,
+		years,
 		rows,
 		bins,
 		binWidth,
@@ -47,19 +49,19 @@ export function DistrictChart(props: DistrictChartProps) {
 	return (
 		<figure className="relative" aria-labelledby={titleId}>
 			<figcaption id={titleId} className="mb-1 text-base font-semibold text-ink">
-				{district.name}
+				{title}
 			</figcaption>
 			<div ref={wrapRef} className="relative w-full">
 				<svg
 					width={width}
 					height={HEIGHT}
 					role="img"
-					aria-label={`${district.name}: multi-family ${metric} by year built`}
+					aria-label={`${title}: multi-family ${metric} by year built`}
 					className="block select-none"
 				>
 					<Axes g={g} bins={bins} />
 					<Bars g={g} rows={rows} sizes={sizes} active={active} />
-					<Markers g={g} district={district} />
+					<Markers g={g} years={years} />
 					{selectedBin === null ? null : (
 						<rect
 							x={MARGIN.left + selectedBin * g.slot}

@@ -41,6 +41,9 @@ async function main() {
 		await targets.nth(12).hover();
 		await targets.nth(12).click();
 	});
+	await shot('ridgeland', {}, async (page) => {
+		await page.locator('label', { hasText: 'Ridgeland - Oak Park' }).click();
+	});
 	await shot('phone', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 	await browser.close();
 	if (errors.length > 0) {
