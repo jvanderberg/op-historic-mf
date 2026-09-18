@@ -37,6 +37,8 @@ export interface Building {
 	readonly zone: string;
 	readonly yearSource: string;
 	readonly pins: number;
+	/** 14-digit PIN with an Assessor page: the building's own PIN, or a condo building's first unit. */
+	readonly linkPin: string;
 }
 
 export interface ExplorerData {
@@ -143,6 +145,7 @@ function parseBuilding(v: unknown): Building {
 		zone: str(v, 'zone'),
 		yearSource: str(v, 'yearSource'),
 		pins: num(v, 'pins'),
+		linkPin: str(v, 'linkPin'),
 	};
 }
 

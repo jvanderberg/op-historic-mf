@@ -21,9 +21,16 @@ const SOURCE_LABEL: Readonly<Record<string, string>> = {
 	unknown: 'unknown',
 };
 
-function assessorHref(id: string): string | null {
-	return id.length === 14 ? `https://www.cookcountyassessor.com/pin/${id}` : null;
-}
+const HEADERS = [
+	'Built',
+	'Address',
+	'District',
+	'Units',
+	'Type',
+	'Zoning',
+	'Year source',
+	'Assessor',
+] as const;
 
 export function BuildingTable({ buildings, districts }: BuildingTableProps) {
 	const nameOf = new Map(districts.map((d) => [d.slug, d.name] as const));
@@ -33,35 +40,20 @@ export function BuildingTable({ buildings, districts }: BuildingTableProps) {
 				<caption className="sr-only">Multi-family buildings matching the current filters</caption>
 				<thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-ink-2">
 					<tr>
-						<th scope="col" className="px-3 py-2">
-							Built
-						</th>
-						<th scope="col" className="px-3 py-2">
-							Address
-						</th>
-						<th scope="col" className="px-3 py-2">
-							District
-						</th>
-						<th scope="col" className="px-3 py-2 text-right">
-							Units
-						</th>
-						<th scope="col" className="px-3 py-2">
-							Type
-						</th>
-						<th scope="col" className="px-3 py-2">
-							Zoning
-						</th>
-						<th scope="col" className="px-3 py-2">
-							Year source
-						</th>
-						<th scope="col" className="px-3 py-2">
-							Assessor
-						</th>
+						{HEADERS.map((h) => (
+							<th
+								key={h}
+								scope="col"
+								className={h === 'Units' ? 'px-3 py-2 text-right' : 'px-3 py-2'}
+							>
+								{h}
+							</th>
+						))}
 					</tr>
 				</thead>
 				<tbody>
 					{buildings.map((b) => {
-						const href = assessorHref(b.id);
+						const isCondo = b.type === 'condo';
 						return (
 							<tr key={b.id} className="border-t border-grid">
 								<td className="px-3 py-1.5 tabular-nums">{b.year ?? 'undated'}</td>
@@ -73,19 +65,16 @@ export function BuildingTable({ buildings, districts }: BuildingTableProps) {
 								<td className="px-3 py-1.5 text-ink-2">
 									{SOURCE_LABEL[b.yearSource] ?? b.yearSource}
 								</td>
-								<td className="px-3 py-1.5">
-									{href === null ? (
-										<span className="text-ink-3">{b.id}</span>
-									) : (
-										<a
-											href={href}
-											target="_blank"
-											rel="noreferrer"
-											className="text-accent underline-offset-2 hover:underline"
-										>
-											{b.id}
-										</a>
-									)}
+								<td className="px-3 py-1.5 whitespace-nowrap">
+									<a
+										href={`https://www.cookcountyassessor.com/pin/${b.linkPin}`}
+										target="_blank"
+										rel="noreferrer"
+										className="text-accent underline-offset-2 hover:underline"
+									>
+										{b.id}
+										{isCondo ? ' (first unit)' : ''}
+									</a>
 								</td>
 							</tr>
 						);
